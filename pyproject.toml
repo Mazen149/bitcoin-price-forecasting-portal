@@ -1,0 +1,11 @@
+[project]
+name = "project-github"
+version = "0.1.0"
+description = "Bitcoin Price Forecasting Portal - Milestone A (Data Ingestion)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+	"kagglehub>=0.3.10",
+	"pandas>=2.2.2",
+	"streamlit>=1.45.0",
+]

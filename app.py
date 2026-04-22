@@ -1,236 +1,237 @@
+"""
+Bitcoin Price Forecasting - Multi-Page Streamlit Application
+=============================================================
+Pages   : 1. Data Loader
+          2. Explore Data
+          3. Forecasting Engine
+
+Color Palette : Institutional Navy and Gold
+Font          : Space Grotesk + JetBrains Mono
+"""
+
 from __future__ import annotations
+
+import warnings
 
 import streamlit as st
 
+from btc_portal.configuration import render_engine_configuration
+from btc_portal.data_pipeline import get_default_price_column
+from btc_portal.forecasting import run_model
 from btc_portal.ingestion import (
-    IngestionError,
-    detect_default_price_column,
-    detect_timestamp_column,
-    get_price_candidates,
-    get_timestamp_candidates,
-    prepare_btc_history,
-    read_btc_csv,
-    read_btc_csv_from_link,
+    get_active_dataframe,
+    get_uploader_widget_key,
+    handle_remote_link_load,
+    handle_uploaded_file,
+    initialize_uploader_state,
+    pop_upload_notice,
+)
+from btc_portal.ui import (
+    configure_page,
+    inject_custom_css,
+    kpi_row,
+    no_data_gate,
+    page_header,
+    render_sidebar_navigation,
+    section_title,
+)
+from btc_portal.visualization import (
+    build_candlestick_volume_figure,
+    build_decomposition_figure,
+    build_forecast_projection_figure,
+    build_loader_price_figure,
+    build_monthly_seasonality_figure,
+    build_return_distribution_figure,
 )
 
+warnings.filterwarnings("ignore")
 
-def main() -> None:
-    st.set_page_config(page_title="Bitcoin Price Forecasting Portal", layout="wide")
+configure_page()
+inject_custom_css()
 
-    st.title("Bitcoin Price Forecasting Portal")
-    st.caption("Milestone A: Data ingestion and validation for Kaggle BTC CSV files")
 
-    st.info(
-        "This commit implements only Part A (Data Ingestion). "
-        "Forecasting and model comparison modules will be added in future commits."
+def render_data_loader_page() -> None:
+    page_header(
+        "₿  Data Loader",
+        "Import historical BTC/USD market data via CSV upload or remote link.",
     )
 
-    source_mode = st.radio(
-        "Data source",
-        options=["Upload CSV", "Insert dataset link"],
-        horizontal=True,
-    )
+    initialize_uploader_state()
 
-    raw_df = None
-    source_label = ""
+    notice = pop_upload_notice()
+    if notice:
+        st.success(notice)
 
-    if source_mode == "Upload CSV":
-        uploaded_file = st.file_uploader("Upload Bitcoin historical CSV", type=["csv"])
+    col1, col2 = st.columns(2, gap="large")
 
-        if uploaded_file is None:
-            st.markdown(
-                "Upload a Kaggle-style BTC dataset to begin. "
-                "Typical timestamp columns include `Date` and `Timestamp`."
-            )
-            return
-
-        try:
-            raw_df = read_btc_csv(uploaded_file)
-        except IngestionError as exc:
-            st.error(str(exc))
-            return
-
-        source_label = uploaded_file.name
-    else:
-        st.markdown(
-            "Use either a direct CSV URL or a Kaggle dataset URL "
-            "such as https://www.kaggle.com/datasets/owner/dataset."
+    with col1:
+        st.markdown("#### 🗂  Upload Local CSV")
+        uploaded = st.file_uploader(
+            "Drop your BTC/USD CSV here",
+            type=["csv"],
+            key=get_uploader_widget_key(),
+            label_visibility="collapsed",
         )
 
-        with st.form("dataset_link_form"):
-            dataset_link = st.text_input(
-                "Dataset link",
-                placeholder="https://www.kaggle.com/datasets/mczielinski/bitcoin-historical-data",
-            )
-            kaggle_csv_filename = st.text_input(
-                "Kaggle CSV file name (optional)",
-                placeholder="example: btcusd_1-min_data.csv",
-                help="Use this when the Kaggle dataset has multiple CSV files.",
-            )
-            fetch_link = st.form_submit_button("Fetch dataset link", type="primary")
+        if uploaded is not None:
+            upload_error = handle_uploaded_file(uploaded)
+            if upload_error:
+                st.error(f"❌  {upload_error}")
 
-        if fetch_link:
-            try:
-                raw_df = read_btc_csv_from_link(
-                    dataset_link=dataset_link,
-                    kaggle_csv_filename=kaggle_csv_filename.strip() or None,
-                )
-            except IngestionError as exc:
-                st.error(str(exc))
-                st.session_state.pop("raw_df_from_link", None)
-                st.session_state.pop("raw_df_link_source", None)
+    with col2:
+        st.markdown("#### 🌐  Fetch from URL or Kaggle")
+        link_input = st.text_input(
+            "Raw CSV URL or Kaggle dataset slug",
+            placeholder="https://.../data.csv   or   mczielinski/bitcoin-...",
+            label_visibility="collapsed",
+        )
+        if st.button("⬇️  Download & Load", type="primary"):
+            remote_error = handle_remote_link_load(link_input)
+            if remote_error:
+                st.error(f"❌  {remote_error}")
             else:
-                st.session_state["raw_df_from_link"] = raw_df
-                st.session_state["raw_df_link_source"] = dataset_link.strip()
+                dataframe = get_active_dataframe()
+                if dataframe is not None:
+                    st.success(f"✅  Dataset loaded - {len(dataframe):,} rows.")
 
-        raw_df = st.session_state.get("raw_df_from_link")
-        source_label = st.session_state.get("raw_df_link_source", "")
-
-        if raw_df is None:
-            st.info("Insert a dataset link and click Fetch dataset link to continue.")
-            return
-
-    st.success(f"Loaded {len(raw_df):,} rows and {len(raw_df.columns):,} columns.")
-    if source_label:
-        st.caption(f"Source: {source_label}")
-
-    st.subheader("Ingested Dataset")
-    st.caption("Preview and inspect the data immediately after ingestion.")
-
-    max_preview_rows = max(1, min(500, len(raw_df)))
-    default_preview_rows = min(50, max_preview_rows)
-    preview_rows = st.slider(
-        "Rows to display",
-        min_value=1,
-        max_value=max_preview_rows,
-        value=default_preview_rows,
-    )
-    st.dataframe(raw_df.head(preview_rows), use_container_width=True)
-
-    full_table_placeholder = st.empty()
-    show_full_table = st.checkbox("Show full ingested dataset (paginated)", value=False)
-    if show_full_table:
-        with full_table_placeholder.container():
-            total_rows = len(raw_df)
-            page_size = st.select_slider(
-                "Rows per page",
-                options=[100, 250, 500, 1000, 5000],
-                value=500,
-            )
-            total_pages = max(1, (total_rows + page_size - 1) // page_size)
-
-            page = st.number_input(
-                "Page",
-                min_value=1,
-                max_value=total_pages,
-                value=1,
-                step=1,
-            )
-            start_idx = (page - 1) * page_size
-            end_idx = min(start_idx + page_size, total_rows)
-
-            st.caption(f"Showing rows {start_idx + 1:,} to {end_idx:,} of {total_rows:,}")
-            st.dataframe(raw_df.iloc[start_idx:end_idx], use_container_width=True)
-    else:
-        full_table_placeholder.empty()
-
-    raw_csv = raw_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        "Download raw ingested dataset",
-        data=raw_csv,
-        file_name="btc_ingested_raw.csv",
-        mime="text/csv",
-    )
-
-    try:
-        timestamp_candidates = get_timestamp_candidates(raw_df)
-        default_timestamp = detect_timestamp_column(raw_df)
-    except IngestionError as exc:
-        st.error(str(exc))
+    dataframe = get_active_dataframe()
+    if dataframe is None:
         return
 
-    price_candidates = get_price_candidates(raw_df)
-    if not price_candidates:
-        st.error(
-            "No numeric price columns were detected. "
-            "Please provide a dataset that includes Close/Open/High/Low or a numeric price column."
-        )
-        return
+    price_col = get_default_price_column(dataframe)
 
-    default_price = detect_default_price_column(price_candidates) or price_candidates[0]
-
-    st.subheader("Data Configuration")
-    st.caption("Detected columns can be overridden before preparation.")
-
-    left_col, right_col = st.columns(2)
-
-    with left_col:
-        timestamp_column = st.selectbox(
-            "Timestamp column",
-            options=timestamp_candidates,
-            index=timestamp_candidates.index(default_timestamp),
-        )
-
-    with right_col:
-        price_column = st.selectbox(
-            "Price column",
-            options=price_candidates,
-            index=price_candidates.index(default_price),
-            help="Recommended: Close, Open, High, or Low.",
-        )
-
-    fill_missing_days = st.checkbox(
-        "Fill missing trading days (daily data only)",
-        value=True,
-        help="If gaps exist in daily data, rows are inserted and price is time-interpolated.",
+    section_title("Dataset Overview")
+    kpi_row(
+        [
+            {"label": "Total Rows", "value": f"{len(dataframe):,}", "sub": "daily observations"},
+            {
+                "label": "Date Range",
+                "value": f"{dataframe.index.max().year - dataframe.index.min().year} yrs",
+                "sub": f"{dataframe.index.min().date()} -> {dataframe.index.max().date()}",
+            },
+            {"label": "Columns", "value": str(len(dataframe.columns)), "sub": "features available"},
+            {
+                "label": "Latest Price",
+                "value": f"${dataframe[price_col].iloc[-1]:,.2f}",
+                "sub": str(dataframe.index[-1].date()),
+            },
+        ]
     )
 
-    if st.button("Validate and Prepare Dataset", type="primary"):
-        try:
-            result = prepare_btc_history(
-                raw_df,
-                timestamp_column=timestamp_column,
-                price_column=price_column,
-                fill_missing_days=fill_missing_days,
-            )
-        except IngestionError as exc:
-            st.error(str(exc))
-            return
+    with st.expander("🔍  First 20 rows"):
+        st.dataframe(dataframe.head(20), use_container_width=True)
 
-        metric_a, metric_b, metric_c, metric_d = st.columns(4)
-        metric_a.metric("Rows (cleaned)", f"{len(result.data):,}")
-        metric_b.metric("Dropped rows", f"{result.dropped_rows:,}")
-        metric_c.metric("Duplicates removed", f"{result.duplicate_timestamps_removed:,}")
-        metric_d.metric("Missing days filled", f"{result.inserted_missing_days:,}")
+    with st.spinner("📊  Rendering chart..."):
+        figure = build_loader_price_figure(dataframe, price_col)
+        st.plotly_chart(figure, use_container_width=True)
 
-        if result.warnings:
-            st.subheader("Validation Notes")
-            for warning in result.warnings:
-                st.warning(warning)
+
+def render_explore_page() -> None:
+    page_header(
+        "📊  Explore Data",
+        "Deep-dive into price action, volatility, decomposition, and return distributions.",
+    )
+
+    dataframe = get_active_dataframe()
+    if dataframe is None:
+        no_data_gate()
+
+    price_col = get_default_price_column(dataframe)
+    has_ohlc = all(col in dataframe.columns for col in ["Open", "High", "Low", "Close"])
+    has_volume = "Volume" in dataframe.columns
+
+    with st.spinner("📊  Generating visualizations..."):
+        section_title("Price Action & Trading Volume")
+        candle_figure = build_candlestick_volume_figure(dataframe, price_col, has_ohlc, has_volume)
+        st.plotly_chart(candle_figure, use_container_width=True)
+
+        section_title("Time Series Decomposition  (30-Day Period)")
+        if len(dataframe) >= 60:
+            decomp_figure = build_decomposition_figure(dataframe, price_col)
+            st.plotly_chart(decomp_figure, use_container_width=True)
         else:
-            st.success("Validation checks passed without warnings.")
+            st.info("Need at least 60 days of data for decomposition.")
 
-        st.subheader("Prepared BTC Dataset")
-        st.dataframe(result.data.head(40), use_container_width=True)
+        section_title("Return Seasonality & Distribution")
+        left_col, right_col = st.columns(2, gap="large")
 
-        start_date = result.data["timestamp"].min().date()
-        end_date = result.data["timestamp"].max().date()
-        st.caption(f"Prepared date range: {start_date} to {end_date}")
+        with left_col:
+            monthly_figure = build_monthly_seasonality_figure(dataframe, price_col)
+            st.plotly_chart(monthly_figure, use_container_width=True)
 
-        prepared_csv = result.data.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Download prepared dataset",
-            data=prepared_csv,
-            file_name="btc_prepared_for_forecasting.csv",
-            mime="text/csv",
+        with right_col:
+            return_figure = build_return_distribution_figure(dataframe, price_col)
+            st.plotly_chart(return_figure, use_container_width=True)
+
+
+def render_forecasting_page() -> None:
+    page_header(
+        "🔮  Forecasting Engine",
+        "Train, evaluate and project BTC prices with statistical and deep-learning models.",
+    )
+
+    dataframe = get_active_dataframe()
+    if dataframe is None:
+        no_data_gate()
+
+    st.markdown("### ⚙️  Engine Configuration")
+    config = render_engine_configuration(dataframe)
+
+    series = dataframe[config.price_col].dropna()
+    split_idx = int(len(series) * 0.85)
+    train = series.iloc[:split_idx]
+    test = series.iloc[split_idx:]
+
+    if config.run_requested:
+        with st.spinner(f"⏳  Training {config.model_choice}..."):
+            result = run_model(config.model_choice, train, test, config.horizon, config.ci_pct)
+            st.session_state["last_result"] = result
+            st.session_state["last_train"] = train
+            st.session_state["last_test"] = test
+            st.session_state["last_ci_pct"] = config.ci_pct
+
+    st.write("<hr>", unsafe_allow_html=True)
+
+    if "last_result" in st.session_state:
+        result = st.session_state["last_result"]
+        last_train = st.session_state["last_train"]
+        last_test = st.session_state["last_test"]
+        ci_pct = int(st.session_state.get("last_ci_pct", config.ci_pct))
+
+        section_title("Holdout Error Metrics")
+        kpi_row(
+            [
+                {
+                    "label": "Algorithm",
+                    "value": str(result["model_name"]).split()[0],
+                    "sub": "active model",
+                },
+                {"label": "MAE", "value": f"${result['mae']:,.2f}", "sub": "mean absolute error"},
+                {"label": "RMSE", "value": f"${result['rmse']:,.2f}", "sub": "root mean squared error"},
+                {"label": "MAPE", "value": f"{result['mape']:.2f}%", "sub": "percentage error"},
+            ]
         )
 
-        st.session_state["prepared_btc_data"] = result.data
-        st.info(
-            "Prepared data is stored in session state as `prepared_btc_data` "
-            "for future forecasting modules."
+        with st.spinner("📈  Rendering forecast chart..."):
+            forecast_figure = build_forecast_projection_figure(last_train, last_test, result, ci_pct)
+            st.plotly_chart(forecast_figure, use_container_width=True)
+    else:
+        kpi_row(
+            [
+                {"label": "Training Rows", "value": f"{len(train):,}", "sub": "85% split"},
+                {"label": "Test Rows", "value": f"{len(test):,}", "sub": "15% holdout"},
+                {"label": "Target Col", "value": config.price_col, "sub": "selected variable"},
+                {"label": "Horizon", "value": f"{config.horizon}d", "sub": "forecast window"},
+            ]
         )
+        st.info("Configure the model above and click **Run Simulation** to begin.")
 
 
-if __name__ == "__main__":
-    main()
+current_page = render_sidebar_navigation()
+
+if current_page == "Data Loader":
+    render_data_loader_page()
+elif current_page == "Explore Data":
+    render_explore_page()
+elif current_page == "Forecasting Engine":
+    render_forecasting_page()

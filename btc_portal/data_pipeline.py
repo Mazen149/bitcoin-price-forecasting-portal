@@ -25,11 +25,18 @@ def load_csv_data(file_bytes: bytes, filename: str) -> pd.DataFrame:
     timestamp_col = timestamp_candidates[0]
     
     # Identify OHLCV columns to keep (case-insensitive)
-    standard_cols = ["open", "high", "low", "close", "volume"]
+    standard_cols = ["open", "high", "low", "close", "volume", "price"]
     to_keep = [timestamp_col]
+    found_standard = False
     for col in header_only.columns:
-        if col.lower() in standard_cols:
-            to_keep.append(col)
+        if any(std in col.lower() for std in standard_cols):
+            if col not in to_keep:
+                to_keep.append(col)
+                found_standard = True
+
+    # If no standard columns are found, keep all columns so we don't end up with an empty dataframe
+    if not found_standard:
+        to_keep = list(header_only.columns)
 
     # Second pass: read only required columns to save memory
     raw = pd.read_csv(io.BytesIO(file_bytes), usecols=to_keep)
@@ -58,6 +65,12 @@ def load_csv_data(file_bytes: bytes, filename: str) -> pd.DataFrame:
     full_range = pd.date_range(daily.index.min(), daily.index.max(), freq="D")
     daily = daily.reindex(full_range).ffill().dropna()
     daily.index.name = "Date"
+
+    if daily.empty or len(daily.columns) == 0:
+        raise ValueError(
+            "The dataset was parsed but resulted in zero usable columns. "
+            "Please ensure the CSV contains numeric price data."
+        )
 
     return daily
 
@@ -105,10 +118,14 @@ def fetch_data_from_link(link: str) -> pd.DataFrame:
     link_hash = hashlib.md5(cleaned.encode()).hexdigest()
     cached_file = os.path.join(cache_dir, f"{link_hash}.csv")
 
-    # 1. Check local disk cache first
-    if os.path.exists(cached_file):
-        with open(cached_file, "rb") as f:
-            return load_csv_data(f.read(), f"cached_{link_hash}.csv")
+    # 1. Check local disk cache first (skip if file is too small / corrupted)
+    if os.path.exists(cached_file) and os.path.getsize(cached_file) > 100:
+        try:
+            with open(cached_file, "rb") as f:
+                return load_csv_data(f.read(), f"cached_{link_hash}.csv")
+        except Exception:
+            # Cache file is corrupted, delete it and re-download
+            os.remove(cached_file)
 
     # 2. If not in cache, download
     if cleaned.startswith("http") and "kaggle.com" not in cleaned:
@@ -140,7 +157,13 @@ def fetch_data_from_link(link: str) -> pd.DataFrame:
 
 
 def get_default_price_column(dataframe: pd.DataFrame) -> str:
-    """Prefer Close when available; otherwise use the first column."""
+    """Prefer Close when available; otherwise use the first numeric column."""
+    if dataframe.empty or len(dataframe.columns) == 0:
+        raise ValueError("Dataset has no columns. Please load a valid CSV.")
     if "Close" in dataframe.columns:
         return "Close"
+    # Prefer the first numeric column that looks like a price
+    for col in dataframe.columns:
+        if any(kw in col.lower() for kw in ["price", "close", "value"]):
+            return str(col)
     return str(dataframe.columns[0])

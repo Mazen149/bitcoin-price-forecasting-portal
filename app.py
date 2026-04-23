@@ -222,7 +222,7 @@ def render_explore_page() -> None:
         "Generate a fast LLM explanation of trend, seasonality, and volatility from the current explore charts."
     )
 
-    if st.button("✨ Explain Explore Insights (Using AI)", key="explain_explore_insights", use_container_width=True):
+    if st.button("✨ AI-Powered Data Insights", key="explain_explore_insights", use_container_width=True):
         with st.spinner("🤖  Generating explore insights..."):
             try:
                 st.session_state[EXPLORE_AI_STATE] = explain_explore_data_with_llm(dataframe, price_col)
@@ -278,7 +278,7 @@ def render_forecasting_page() -> None:
         last_test = st.session_state["last_test"]
         ci_pct = int(st.session_state.get("last_ci_pct", config.ci_pct))
 
-        section_title("Holdout Error Metrics")
+        section_title("Test Data Error Metrics")
         kpi_row(
             [
                 {
@@ -301,7 +301,7 @@ def render_forecasting_page() -> None:
             "Generate a fast LLM explanation of holdout metrics, forecast direction, and confidence interval."
         )
 
-        if st.button("✨ Explain Forecast Results (Using AI)", key="explain_forecast_results", use_container_width=True):
+        if st.button("✨ AI-Powered Forecast Analysis", key="explain_forecast_results", use_container_width=True):
             with st.spinner("🤖  Generating forecast explanation..."):
                 try:
                     st.session_state[FORECAST_AI_STATE] = explain_forecast_with_llm(

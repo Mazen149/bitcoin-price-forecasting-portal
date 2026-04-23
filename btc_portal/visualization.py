@@ -323,7 +323,7 @@ def build_forecast_projection_figure(
         go.Scatter(
             x=test.index,
             y=test,
-            name="Actual (Holdout)",
+            name="Test Data",
             line=dict(color=C_PRIMARY, width=2),
         )
     )
@@ -331,7 +331,7 @@ def build_forecast_projection_figure(
         go.Scatter(
             x=result["test_dates"],
             y=result["test_pred"],
-            name="Backtest",
+            name="Prediction on Test Data",
             line=dict(color=C_GREEN, dash="dot", width=2),
         )
     )

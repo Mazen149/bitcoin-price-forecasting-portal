@@ -188,7 +188,7 @@ def explain_forecast_with_llm(
         f"MAE: {float(result.get('mae', np.nan)):,.3f}",
         f"RMSE: {float(result.get('rmse', np.nan)):,.3f}",
         f"MAPE (%): {float(result.get('mape', np.nan)):,.3f}",
-        f"Mean backtest bias (actual - pred): {_format_float(mean_bias)}",
+        f"Mean test-data bias (test data - prediction): {_format_float(mean_bias)}",
         f"Forecast horizon points: {len(future_pred)}",
         f"Forecast start/end: {_format_float(float(future_pred[0]) if future_pred.size else float('nan'))} -> "
         f"{_format_float(float(future_pred[-1]) if future_pred.size else float('nan'))}",
@@ -199,7 +199,7 @@ def explain_forecast_with_llm(
 
     prompt = (
         "You are a forecasting reviewer for a BTC dashboard.\n"
-        "Write ONLY concise markdown insights summarizing the forecast and backtest.\n"
+        "Write ONLY concise markdown insights summarizing the forecast and test-data predictions.\n"
         "Format the output elegantly with bold text, emojis, and clear spacing. Make it visually appealing.\n"
         "Your job is to translate complex metrics into plain-language summaries (e.g., trend direction, magnitude, and general confidence level).\n"
         "AVOID listing too many raw statistical numbers; instead, interpret them for the user (e.g., say 'high error' instead of just 'RMSE: 0.123').\n"

@@ -73,6 +73,39 @@ def inject_custom_css() -> None:
     --font-main   : 'Space Grotesk', sans-serif;
 }
 
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html {
+    scrollbar-gutter: stable;
+}
+
+body {
+    overflow-y: scroll;
+}
+
+[data-testid="stAppViewContainer"] {
+    scrollbar-gutter: stable both-edges;
+    overflow-y: scroll !important;
+}
+
+.block-container {
+    padding-top: 1.2rem !important;
+    padding-bottom: 1.6rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+    max-width: 1400px;
+}
+
+@media (max-width: 768px) {
+    .block-container {
+        padding-top: 1rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
+
 html, body, .stApp, .main,
 [data-testid="stAppViewContainer"],
 [data-testid="stHeader"] {
@@ -187,6 +220,39 @@ label {
     font-weight: 500 !important;
     font-family: var(--font-main) !important;
 }
+
+/* Data source selector: improve readability and active-state visibility */
+div[data-testid="stRadio"] > div[role="radiogroup"] {
+    gap: 0.6rem;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"] {
+    background: var(--bg-panel) !important;
+    border: 1px solid var(--bg-border) !important;
+    border-radius: 9px !important;
+    padding: 0.45rem 0.75rem !important;
+    min-height: 44px;
+    transition: all 0.2s ease;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"]:hover {
+    border-color: var(--accent) !important;
+    background: rgba(250,219,95,0.07) !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"]:has(input:checked) {
+    border-color: var(--accent) !important;
+    background: rgba(250,219,95,0.14) !important;
+    box-shadow: 0 0 0 1px rgba(250,219,95,0.28) inset;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"] p {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child > div {
+    border-color: var(--accent) !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"]:has(input:checked) > div:first-child > div {
+    background-color: var(--accent) !important;
+}
+
 .stTextInput > div > div > input,
 .stSelectbox > div > div {
     background: var(--bg-panel) !important;

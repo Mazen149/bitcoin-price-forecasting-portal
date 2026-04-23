@@ -49,6 +49,21 @@ warnings.filterwarnings("ignore")
 configure_page()
 inject_custom_css()
 
+REMOTE_LINK_EXAMPLES = [
+    (
+        "Kaggle URL",
+        "https://www.kaggle.com/datasets/novandraanugrah/bitcoin-historical-datasets-2018-2024",
+    ),
+    (
+        "Kaggle Slug",
+        "novandraanugrah/bitcoin-historical-datasets-2018-2024",
+    ),
+    (
+        "GitHub Blob URL",
+        "https://github.com/Yrzxiong/Bitcoin-Dataset/blob/master/bitcoin_dataset.csv",
+    ),
+]
+
 
 def render_data_loader_page() -> None:
     page_header(
@@ -62,9 +77,49 @@ def render_data_loader_page() -> None:
     if notice:
         st.success(notice)
 
-    col1, col2 = st.columns(2, gap="large")
+    if st.session_state.get("data_source_mode") not in {
+        "🌐 Fetch from URL / Kaggle",
+        "🗂 Upload Local CSV",
+    }:
+        st.session_state["data_source_mode"] = "🌐 Fetch from URL / Kaggle"
 
-    with col1:
+    st.markdown("### Select Data Source")
+    st.caption("Choose one source only. The selected option is highlighted.")
+    source_mode = st.radio(
+        "Load data using one method",
+        ["🌐 Fetch from URL / Kaggle", "🗂 Upload Local CSV"],
+        key="data_source_mode",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+    if source_mode == "🌐 Fetch from URL / Kaggle":
+        st.markdown("#### 🌐  Fetch from URL or Kaggle")
+
+        link_input = st.text_input(
+            "Raw CSV URL or Kaggle dataset slug",
+            placeholder="https://.../data.csv   or   mczielinski/bitcoin-...",
+            label_visibility="collapsed",
+        )
+
+        st.markdown("##### Test Examples")
+        st.caption("Use the examples below to test the fetch loader.")
+        for label, value in REMOTE_LINK_EXAMPLES:
+            if value.startswith("http"):
+                st.markdown(f"**{label}** : [{value}]({value})")
+            else:
+                st.markdown(f"**{label}** : {value}")
+
+        if st.button("⬇️  Download & Load", type="primary"):
+            remote_error = handle_remote_link_load(link_input)
+            if remote_error:
+                st.error(f"❌  {remote_error}")
+            else:
+                dataframe = get_active_dataframe()
+                if dataframe is not None:
+                    st.success(f"✅  Dataset loaded - {len(dataframe):,} rows.")
+
+    else:
         st.markdown("#### 🗂  Upload Local CSV")
         uploaded = st.file_uploader(
             "Drop your BTC/USD CSV here",
@@ -77,22 +132,6 @@ def render_data_loader_page() -> None:
             upload_error = handle_uploaded_file(uploaded)
             if upload_error:
                 st.error(f"❌  {upload_error}")
-
-    with col2:
-        st.markdown("#### 🌐  Fetch from URL or Kaggle")
-        link_input = st.text_input(
-            "Raw CSV URL or Kaggle dataset slug",
-            placeholder="https://.../data.csv   or   mczielinski/bitcoin-...",
-            label_visibility="collapsed",
-        )
-        if st.button("⬇️  Download & Load", type="primary"):
-            remote_error = handle_remote_link_load(link_input)
-            if remote_error:
-                st.error(f"❌  {remote_error}")
-            else:
-                dataframe = get_active_dataframe()
-                if dataframe is not None:
-                    st.success(f"✅  Dataset loaded - {len(dataframe):,} rows.")
 
     dataframe = get_active_dataframe()
     if dataframe is None:

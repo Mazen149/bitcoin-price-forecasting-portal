@@ -29,6 +29,7 @@ from .ui import (
     no_data_gate,
     page_header,
     render_sidebar_navigation,
+    scroll_to_top,
     section_title,
 )
 from .visualization import (
@@ -38,6 +39,7 @@ from .visualization import (
     build_loader_price_figure,
     build_monthly_seasonality_figure,
     build_return_distribution_figure,
+    build_monthly_heatmap_figure,
 )
 
 __all__ = [
@@ -60,6 +62,7 @@ __all__ = [
     "build_loader_price_figure",
     "build_monthly_seasonality_figure",
     "build_return_distribution_figure",
+    "build_monthly_heatmap_figure",
     "configure_page",
     "evaluate_metrics",
     "fetch_data_from_link",
@@ -78,6 +81,7 @@ __all__ = [
     "pop_upload_notice",
     "render_engine_configuration",
     "render_sidebar_navigation",
+    "scroll_to_top",
     "run_arima",
     "run_holt_winters",
     "run_lstm",

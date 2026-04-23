@@ -217,6 +217,7 @@ def build_monthly_seasonality_figure(dataframe: pd.DataFrame, price_col: str) ->
 
 
 def build_return_distribution_figure(dataframe: pd.DataFrame, price_col: str) -> go.Figure:
+    """Build a histogram of log returns with a normal distribution fit."""
     dr = dataframe.copy()
     dr["log_return"] = np.log(dr[price_col] / dr[price_col].shift(1))
     rc = dr["log_return"].dropna() * 100
@@ -237,6 +238,7 @@ def build_return_distribution_figure(dataframe: pd.DataFrame, price_col: str) ->
         if sigma > 0:
             x_norm = np.linspace(float(rc.min()), float(rc.max()), 200)
             y_norm = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-((x_norm - mu) ** 2) / (2 * sigma**2))
+            # Scale normal curve to histogram bins
             y_norm = y_norm * len(rc) * (float(rc.max()) - float(rc.min())) / 80
             fig.add_trace(
                 go.Scatter(
@@ -250,6 +252,53 @@ def build_return_distribution_figure(dataframe: pd.DataFrame, price_col: str) ->
 
     apply_layout(fig, "Log-Return Distribution (%)", height=360)
     fig.update_layout(xaxis_title="Log Return (%)", yaxis_title="Frequency")
+    return fig
+
+
+def build_monthly_heatmap_figure(dataframe: pd.DataFrame, price_col: str) -> go.Figure:
+    """Build a Year vs Month performance heatmap."""
+    # Resample to monthly and get pct change
+    monthly_resampled = dataframe[price_col].resample("ME").last()
+    monthly_returns = monthly_resampled.pct_change().dropna() * 100
+
+    # Prepare data for pivot
+    returns_df = pd.DataFrame(
+        {
+            "Year": monthly_returns.index.year,
+            "Month": monthly_returns.index.month,
+            "Return": monthly_returns.values,
+        }
+    )
+
+    # Create pivot table
+    pivot = returns_df.pivot(index="Year", columns="Month", values="Return")
+
+    # Mapping for month names
+    month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    available_months = [month_labels[m - 1] for m in pivot.columns]
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=pivot.values,
+            x=available_months,
+            y=pivot.index,
+            colorscale=[
+                [0, "#FF1744"],  # Deep Red
+                [0.5, "#121E38"],  # Neutral Navy
+                [1, "#00E676"],  # Vibrant Green
+            ],
+            zmid=0,
+            text=pivot.map(lambda x: f"{x:.1f}%" if not np.isnan(x) else ""),
+            texttemplate="%{text}",
+            textfont={"size": 10, "family": "JetBrains Mono"},
+            hovertemplate="Year: %{y}<br>Month: %{x}<br>Return: %{z:.2f}%<extra></extra>",
+            showscale=True,
+            colorbar=dict(title="Return %", thickness=15),
+        )
+    )
+
+    apply_layout(fig, "Monthly Performance Heatmap (%)", height=400)
+    fig.update_layout(xaxis_title="", yaxis_title="Year", yaxis_autorange="reversed")
     return fig
 
 

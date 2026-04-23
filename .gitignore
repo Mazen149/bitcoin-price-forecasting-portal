@@ -189,3 +189,6 @@ fabric.properties
 # Virtual Environment
 venv
 venv/
+
+# Streamlit secrets
+.streamlit/secrets.toml

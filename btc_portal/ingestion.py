@@ -69,6 +69,7 @@ def handle_remote_link_load(link_input: str) -> str | None:
         with st.spinner("⏳  Fetching dataset…"):
             dataframe = fetch_data_from_link(link_input)
             _set_active_dataframe(dataframe, "remote")
+            st.rerun()
     except Exception as exc:
         return str(exc)
 

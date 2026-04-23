@@ -4,6 +4,7 @@ from typing import Any
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 C_PRIMARY = "#FADB5F"
 C_DEEP_GOLD = "#D4AF37"
@@ -18,8 +19,8 @@ C_VOL_DOWN = "#4FC3F7"
 
 PAGES = [
     ("📂", "Data Loader"),
-    ("📊", "Explore Data"),
-    ("🔮", "Forecasting Engine"),
+    ("📊", "Explore Data with AI Insights"),
+    ("🔮", "Forecasting with AI Insights"),
 ]
 
 PLOTLY_BASE = dict(
@@ -130,6 +131,9 @@ html, body, .stApp, .main,
     background: var(--bg-card) !important;
     border-right: 1px solid var(--bg-border) !important;
 }
+[data-testid="stSidebarContent"] {
+    padding-top: 0.5rem !important;
+}
 
 .page-header {
     background: linear-gradient(135deg, var(--bg-panel) 0%, rgba(22,33,64,0.4) 100%);
@@ -167,10 +171,20 @@ html, body, .stApp, .main,
 }
 .kpi-value {
     color: var(--accent);
-    font-size: 1.65rem;
+    font-size: 1.4rem;
     font-weight: 700;
-    margin: 0.3rem 0 0;
+    margin: 0.2rem 0 0;
     font-family: var(--font-mono);
+    overflow-wrap: break-word;
+}
+
+code {
+    background: rgba(250, 219, 95, 0.08) !important;
+    color: var(--accent) !important;
+    border: 1px solid var(--bg-border) !important;
+    border-radius: 4px !important;
+    padding: 0.1rem 0.3rem !important;
+    font-family: var(--font-mono) !important;
 }
 .kpi-sub {
     color: var(--text-muted);
@@ -343,7 +357,7 @@ section[data-testid="stFileUploadDropzone"] ~ div,
 
 .brand-logo {
     text-align: center;
-    padding: 1.5rem 0 0.3rem;
+    padding: 0.2rem 0 0.1rem;
     font-size: 3rem;
     color: var(--accent);
     font-weight: 700;
@@ -355,13 +369,22 @@ section[data-testid="stFileUploadDropzone"] ~ div,
     text-transform: uppercase;
     letter-spacing: 0.2em;
     color: var(--text-muted);
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .nav-active > button {
     border-color: var(--accent) !important;
     color: var(--accent) !important;
     background: rgba(250,219,95,0.08) !important;
+    box-shadow: 0 0 0 1px var(--accent) inset !important;
+}
+
+.nav-idle > button {
+    border-color: var(--bg-border) !important;
+}
+
+.nav-active, .nav-idle {
+    margin-bottom: -0.85rem !important;
 }
 
 [data-testid="stSidebar"] .stButton {
@@ -369,14 +392,18 @@ section[data-testid="stFileUploadDropzone"] ~ div,
 }
 [data-testid="stSidebar"] .stButton > button {
     width: 100%;
-    min-height: 52px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    padding: 0.55rem 0.9rem !important;
+    padding: 0.45rem 0.8rem !important;
 }
 [data-testid="stSidebar"] .stButton > button p {
-    white-space: nowrap;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    text-align: left !important;
+    line-height: 1.25 !important;
+    font-size: 0.85rem !important;
 }
 
 hr { border-color: var(--bg-border) !important; }
@@ -384,6 +411,39 @@ hr { border-color: var(--bg-border) !important; }
 [data-testid="stDataFrameContainer"] {
     border: 1px solid var(--bg-border) !important;
     border-radius: 8px !important;
+    background-color: var(--bg-card) !important;
+}
+
+/* Ensure the table internals are also dark */
+[data-testid="stDataFrameContainer"] [role="gridcell"],
+[data-testid="stDataFrameContainer"] [role="columnheader"] {
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+}
+
+
+/* Expander styling */
+[data-testid="stExpander"] {
+    background: var(--bg-panel) !important;
+    border: 1px solid var(--bg-border) !important;
+    border-radius: 8px !important;
+    margin-bottom: 1rem !important;
+}
+[data-testid="stExpander"] summary {
+    background: var(--bg-panel) !important;
+    border-radius: 8px 8px 0 0 !important;
+}
+[data-testid="stExpander"] summary p {
+    color: var(--accent) !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+
+
+[data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+    padding: 1.2rem !important;
+    background: var(--bg-card) !important;
+    border-radius: 0 0 8px 8px !important;
 }
 </style>
         """,
@@ -435,6 +495,52 @@ def no_data_gate() -> None:
     st.stop()
 
 
+def scroll_to_top() -> None:
+    """Inject JS to scroll the main container to the top using the most reliable selector."""
+    components.html(
+        """
+        <script>
+            function performScroll() {
+                // Scroll the parent window directly
+                window.parent.scrollTo({top: 0, behavior: 'instant'});
+                window.parent.document.body.scrollTop = 0;
+                window.parent.document.documentElement.scrollTop = 0;
+
+                // This selector is the most robust for modern Streamlit versions
+                const container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
+                if (container) {
+                    container.scrollTo({top: 0, behavior: 'instant'});
+                    if (container.parentElement) {
+                        container.parentElement.scrollTo({top: 0, behavior: 'instant'});
+                    }
+                }
+                
+                // Fallbacks for older/different layouts
+                const main = window.parent.document.querySelector('.main');
+                if (main) main.scrollTo({top: 0, behavior: 'instant'});
+                
+                const stMain = window.parent.document.querySelector('[data-testid="stMain"]');
+                if (stMain) stMain.scrollTo({top: 0, behavior: 'instant'});
+                
+                const stApp = window.parent.document.querySelector('.stApp');
+                if (stApp) stApp.scrollTo({top: 0, behavior: 'instant'});
+            }
+            
+            // Execute immediately
+            performScroll();
+            
+            // Execute repeatedly over the next second to override Streamlit's internal scroll restoration
+            setTimeout(performScroll, 50);
+            setTimeout(performScroll, 150);
+            setTimeout(performScroll, 300);
+            setTimeout(performScroll, 600);
+            setTimeout(performScroll, 1000);
+        </script>
+        """,
+        height=0,
+    )
+
+
 def _render_loaded_dataset_card(df_info: pd.DataFrame) -> None:
     st.markdown(
         f"""
@@ -460,17 +566,12 @@ def render_sidebar_navigation() -> str:
             st.session_state.page = "Data Loader"
 
         for icon, name in PAGES:
-            active = "nav-active" if st.session_state.page == name else ""
-            with st.container():
-                if active:
-                    st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
-
-                if st.button(f"{icon}  {name}", key=f"nav_{name}", use_container_width=True):
-                    st.session_state.page = name
-                    st.rerun()
-
-                if active:
-                    st.markdown("</div>", unsafe_allow_html=True)
+            css_class = "nav-active" if st.session_state.page == name else "nav-idle"
+            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            if st.button(f"{icon}  {name}", key=f"nav_{name}", use_container_width=True):
+                st.session_state.page = name
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
 
         st.divider()
         if "df" in st.session_state:

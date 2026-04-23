@@ -10,38 +10,54 @@ import pandas as pd
 import requests
 import streamlit as st
 
-MIN_DAILY_ROWS = 60
-
-
 @st.cache_data(show_spinner=False)
 def load_csv_data(file_bytes: bytes, filename: str) -> pd.DataFrame:
-    """Standardize an uploaded CSV into a daily Date-indexed dataframe."""
-    raw = pd.read_csv(io.BytesIO(file_bytes))
-
+    """Standardize an uploaded CSV into a daily Date-indexed dataframe with memory optimizations."""
+    # First pass: read headers to find the timestamp column
+    header_only = pd.read_csv(io.BytesIO(file_bytes), nrows=0)
     timestamp_candidates = [
-        col
-        for col in raw.columns
+        col for col in header_only.columns
         if any(token in str(col).lower() for token in ["time", "date", "timestamp"])
     ]
     if not timestamp_candidates:
         raise ValueError("No timestamp column found. Expected 'Date' or 'Time'.")
+    
+    timestamp_col = timestamp_candidates[0]
+    
+    # Identify OHLCV columns to keep (case-insensitive)
+    standard_cols = ["open", "high", "low", "close", "volume"]
+    to_keep = [timestamp_col]
+    for col in header_only.columns:
+        if col.lower() in standard_cols:
+            to_keep.append(col)
 
-    timestamp_column = timestamp_candidates[0]
-    raw[timestamp_column] = pd.to_datetime(raw[timestamp_column], errors="coerce")
-    raw = raw.dropna(subset=[timestamp_column]).sort_values(timestamp_column).reset_index(drop=True)
+    # Second pass: read only required columns to save memory
+    raw = pd.read_csv(io.BytesIO(file_bytes), usecols=to_keep)
 
-    raw["Date"] = raw[timestamp_column].dt.date
-    daily = raw.groupby("Date").first().reset_index()
-    daily["Date"] = pd.to_datetime(daily["Date"])
+    # Robust Unix/ISO timestamp conversion
+    if pd.api.types.is_numeric_dtype(raw[timestamp_col]):
+        unit = "s"
+        sample = raw[timestamp_col].dropna().iloc[0] if not raw[timestamp_col].dropna().empty else 0
+        if sample > 1e12: unit = "ms"
+        if sample > 1e15: unit = "us"
+        raw[timestamp_col] = pd.to_datetime(raw[timestamp_col], unit=unit, errors="coerce")
+    else:
+        raw[timestamp_col] = pd.to_datetime(raw[timestamp_col], errors="coerce")
 
-    daily.columns = [col.strip().title() if col != "Date" else col for col in daily.columns]
-    daily = daily.set_index("Date").sort_index()
-
+    # Drop invalid dates and set index
+    raw = raw.dropna(subset=[timestamp_col]).set_index(timestamp_col).sort_index()
+    
+    # Resample to daily (takes first price of the day)
+    # This massively reduces memory usage (e.g., from 7.5M rows to ~3k rows)
+    daily = raw.resample("D").first()
+    
+    # Standardization: Title-case columns
+    daily.columns = [col.strip().title() for col in daily.columns]
+    
+    # Fill gaps in the daily range
     full_range = pd.date_range(daily.index.min(), daily.index.max(), freq="D")
     daily = daily.reindex(full_range).ffill().dropna()
-
-    if len(daily) < MIN_DAILY_ROWS:
-        raise ValueError(f"Need at least {MIN_DAILY_ROWS} days of data after cleaning.")
+    daily.index.name = "Date"
 
     return daily
 
@@ -76,31 +92,37 @@ def _extract_kaggle_slug(link: str) -> str:
 
 @st.cache_data(show_spinner=False)
 def fetch_data_from_link(link: str) -> pd.DataFrame:
-    """Download and normalize dataset from HTTP CSV links or Kaggle dataset slugs/URLs."""
+    """Download and normalize dataset with persistent disk caching."""
     cleaned = link.strip()
     if not cleaned:
         raise ValueError("Please enter a valid URL or Kaggle slug.")
 
+    # Setup persistent cache directory
+    cache_dir = os.path.join(os.getcwd(), "data_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+
+    import hashlib
+    link_hash = hashlib.md5(cleaned.encode()).hexdigest()
+    cached_file = os.path.join(cache_dir, f"{link_hash}.csv")
+
+    # 1. Check local disk cache first
+    if os.path.exists(cached_file):
+        with open(cached_file, "rb") as f:
+            return load_csv_data(f.read(), f"cached_{link_hash}.csv")
+
+    # 2. If not in cache, download
     if cleaned.startswith("http") and "kaggle.com" not in cleaned:
         download_link = normalize_remote_csv_link(cleaned)
         response = requests.get(download_link, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
         response.raise_for_status()
+        
+        # Save to disk cache
+        with open(cached_file, "wb") as f:
+            f.write(response.content)
+            
+        return load_csv_data(response.content, os.path.basename(urlparse(download_link).path) or "data.csv")
 
-        content_type = response.headers.get("Content-Type", "").lower()
-        payload_head = response.content[:500].lstrip().lower()
-        if (
-            "text/html" in content_type
-            or payload_head.startswith(b"<!doctype html")
-            or payload_head.startswith(b"<html")
-        ):
-            raise ValueError(
-                "The provided link returned HTML instead of CSV. "
-                "For GitHub, paste the file URL (with /blob/) or a raw.githubusercontent.com CSV link."
-            )
-
-        filename = os.path.basename(urlparse(download_link).path) or "downloaded_data.csv"
-        return load_csv_data(response.content, filename)
-
+    # 3. Handle Kaggle
     slug = _extract_kaggle_slug(cleaned)
     kagglehub = importlib.import_module("kagglehub")
     dataset_path = kagglehub.dataset_download(slug)
@@ -110,7 +132,11 @@ def fetch_data_from_link(link: str) -> pd.DataFrame:
         raise FileNotFoundError("No CSV file found in the downloaded Kaggle dataset.")
 
     with open(csv_files[0], "rb") as handle:
-        return load_csv_data(handle.read(), os.path.basename(csv_files[0]))
+        content = handle.read()
+        # Save to disk cache for future quick access without kagglehub logic
+        with open(cached_file, "wb") as f:
+            f.write(content)
+        return load_csv_data(content, os.path.basename(csv_files[0]))
 
 
 def get_default_price_column(dataframe: pd.DataFrame) -> str:

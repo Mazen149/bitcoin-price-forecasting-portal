@@ -26,6 +26,7 @@ from btc_portal.ingestion import (
     initialize_uploader_state,
     pop_upload_notice,
 )
+from btc_portal.llm import explain_explore_data_with_llm, explain_forecast_with_llm
 from btc_portal.ui import (
     configure_page,
     inject_custom_css,
@@ -33,6 +34,7 @@ from btc_portal.ui import (
     no_data_gate,
     page_header,
     render_sidebar_navigation,
+    scroll_to_top,
     section_title,
 )
 from btc_portal.visualization import (
@@ -42,12 +44,16 @@ from btc_portal.visualization import (
     build_loader_price_figure,
     build_monthly_seasonality_figure,
     build_return_distribution_figure,
+    build_monthly_heatmap_figure,
 )
 
 warnings.filterwarnings("ignore")
 
 configure_page()
 inject_custom_css()
+
+EXPLORE_AI_STATE = "explore_ai_summary"
+FORECAST_AI_STATE = "forecast_ai_summary"
 
 REMOTE_LINK_EXAMPLES = [
     (
@@ -66,9 +72,10 @@ REMOTE_LINK_EXAMPLES = [
 
 
 def render_data_loader_page() -> None:
+    scroll_to_top()
     page_header(
-        "₿  Data Loader",
-        "Import historical BTC/USD market data via CSV upload or remote link.",
+        "📂  Data Loader",
+        "Upload a local CSV or fetch Bitcoin historical data from a remote URL or Kaggle.",
     )
 
     initialize_uploader_state()
@@ -87,7 +94,7 @@ def render_data_loader_page() -> None:
     st.caption("Choose one source only. The selected option is highlighted.")
     source_mode = st.radio(
         "Load data using one method",
-        ["🌐 Fetch from URL / Kaggle", "🗂 Upload Local CSV"],
+        ["🌐 Fetch from URL / Kaggle", "📤 Upload Local CSV"],
         key="data_source_mode",
         horizontal=True,
         label_visibility="collapsed",
@@ -96,21 +103,27 @@ def render_data_loader_page() -> None:
     if source_mode == "🌐 Fetch from URL / Kaggle":
         st.markdown("#### 🌐  Fetch from URL or Kaggle")
 
-        link_input = st.text_input(
-            "Raw CSV URL or Kaggle dataset slug",
-            placeholder="https://.../data.csv   or   mczielinski/bitcoin-...",
-            label_visibility="collapsed",
-        )
+        with st.expander("💡  View Example Data Links"):
+            st.caption("Use these links to test the fetch loader. Click to copy or open.")
+            for label, value in REMOTE_LINK_EXAMPLES:
+                if value.startswith("http"):
+                    st.markdown(f"**{label}**: `{value}`")
+                else:
+                    st.markdown(f"**{label}**: `{value}`")
 
-        st.markdown("##### Test Examples")
-        st.caption("Use the examples below to test the fetch loader.")
-        for label, value in REMOTE_LINK_EXAMPLES:
-            if value.startswith("http"):
-                st.markdown(f"**{label}** : [{value}]({value})")
-            else:
-                st.markdown(f"**{label}** : {value}")
+        input_col, button_col = st.columns([5, 1], vertical_alignment="bottom")
+        with input_col:
+            link_input = st.text_input(
+                "Raw CSV URL or Kaggle dataset slug",
+                placeholder="https://.../data.csv   or   mczielinski/bitcoin-...",
+                label_visibility="collapsed",
+            )
+        with button_col:
+            download_clicked = st.button("⬇️  Download & Load", type="primary")
 
-        if st.button("⬇️  Download & Load", type="primary"):
+
+
+        if download_clicked:
             remote_error = handle_remote_link_load(link_input)
             if remote_error:
                 st.error(f"❌  {remote_error}")
@@ -166,8 +179,9 @@ def render_data_loader_page() -> None:
 
 
 def render_explore_page() -> None:
+    scroll_to_top()
     page_header(
-        "📊  Explore Data",
+        "📊  Explore Data with AI Insights",
         "Deep-dive into price action, volatility, decomposition, and return distributions.",
     )
 
@@ -202,10 +216,31 @@ def render_explore_page() -> None:
             return_figure = build_return_distribution_figure(dataframe, price_col)
             st.plotly_chart(return_figure, use_container_width=True)
 
+        section_title("Historical Monthly Heatmap")
+        heatmap_figure = build_monthly_heatmap_figure(dataframe, price_col)
+        st.plotly_chart(heatmap_figure, use_container_width=True)
+
+    st.write("<hr>", unsafe_allow_html=True)
+    section_title("AI Insight Assistant")
+    st.caption(
+        "Generate a fast LLM explanation of trend, seasonality, and volatility from the current explore charts."
+    )
+
+    if st.button("✨ Explain Explore Insights (Using AI)", key="explain_explore_insights", use_container_width=True):
+        with st.spinner("🤖  Generating explore insights..."):
+            try:
+                st.session_state[EXPLORE_AI_STATE] = explain_explore_data_with_llm(dataframe, price_col)
+            except Exception as exc:
+                st.error(f"❌  {exc}")
+
+    if EXPLORE_AI_STATE in st.session_state:
+        st.markdown(st.session_state[EXPLORE_AI_STATE])
+
 
 def render_forecasting_page() -> None:
+    scroll_to_top()
     page_header(
-        "🔮  Forecasting Engine",
+        "🔮  Forecasting with AI Insights",
         "Train, evaluate and project BTC prices with statistical and deep-learning models.",
     )
 
@@ -254,6 +289,26 @@ def render_forecasting_page() -> None:
         with st.spinner("📈  Rendering forecast chart..."):
             forecast_figure = build_forecast_projection_figure(last_train, last_test, result, ci_pct)
             st.plotly_chart(forecast_figure, use_container_width=True)
+
+        section_title("AI Forecast Explanation")
+        st.caption(
+            "Generate a fast LLM explanation of holdout metrics, forecast direction, and confidence interval."
+        )
+
+        if st.button("✨ Explain Forecast Results (Using AI)", key="explain_forecast_results", use_container_width=True):
+            with st.spinner("🤖  Generating forecast explanation..."):
+                try:
+                    st.session_state[FORECAST_AI_STATE] = explain_forecast_with_llm(
+                        last_train,
+                        last_test,
+                        result,
+                        ci_pct,
+                    )
+                except Exception as exc:
+                    st.error(f"❌  {exc}")
+
+        if FORECAST_AI_STATE in st.session_state:
+            st.markdown(st.session_state[FORECAST_AI_STATE])
     else:
         kpi_row(
             [
@@ -270,7 +325,7 @@ current_page = render_sidebar_navigation()
 
 if current_page == "Data Loader":
     render_data_loader_page()
-elif current_page == "Explore Data":
+elif current_page == "Explore Data with AI Insights":
     render_explore_page()
-elif current_page == "Forecasting Engine":
+elif current_page == "Forecasting with AI Insights":
     render_forecasting_page()

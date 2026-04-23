@@ -46,7 +46,7 @@ def render_engine_configuration(dataframe: pd.DataFrame) -> EngineConfig:
         model_choice = st.selectbox("Algorithm", MODEL_OPTIONS)
 
     with c3:
-        horizon = st.slider("Horizon (Days)", 7, 180, 30)
+        horizon = st.slider("Horizon (Days)", 7, 180, 90)
 
     with c4:
         ci_pct = st.selectbox("Confidence Band", [80, 90, 95, 99], index=2)

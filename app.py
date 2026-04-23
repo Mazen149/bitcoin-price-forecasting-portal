@@ -111,7 +111,7 @@ def render_data_loader_page() -> None:
                 else:
                     st.markdown(f"**{label}**: `{value}`")
 
-        input_col, button_col = st.columns([5, 1], vertical_alignment="bottom")
+        input_col, button_col = st.columns([5.5, 1], vertical_alignment="bottom")
         with input_col:
             link_input = st.text_input(
                 "Raw CSV URL or Kaggle dataset slug",
@@ -119,7 +119,7 @@ def render_data_loader_page() -> None:
                 label_visibility="collapsed",
             )
         with button_col:
-            download_clicked = st.button("⬇️  Download & Load", type="primary")
+            download_clicked = st.button("📡 Fetch Data", type="primary", use_container_width=True)
 
 
 

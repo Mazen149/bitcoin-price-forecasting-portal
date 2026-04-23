@@ -72,11 +72,11 @@ REMOTE_LINK_EXAMPLES = [
 
 
 def render_data_loader_page() -> None:
-    scroll_to_top()
     page_header(
         "📂  Data Loader",
         "Upload a local CSV or fetch Bitcoin historical data from a remote URL or Kaggle.",
     )
+    scroll_to_top()
 
     initialize_uploader_state()
 
@@ -86,7 +86,7 @@ def render_data_loader_page() -> None:
 
     if st.session_state.get("data_source_mode") not in {
         "🌐 Fetch from URL / Kaggle",
-        "🗂 Upload Local CSV",
+        "📤 Upload Local CSV",
     }:
         st.session_state["data_source_mode"] = "🌐 Fetch from URL / Kaggle"
 
@@ -127,10 +127,6 @@ def render_data_loader_page() -> None:
             remote_error = handle_remote_link_load(link_input)
             if remote_error:
                 st.error(f"❌  {remote_error}")
-            else:
-                dataframe = get_active_dataframe()
-                if dataframe is not None:
-                    st.success(f"✅  Dataset loaded - {len(dataframe):,} rows.")
 
     else:
         st.markdown("#### 🗂  Upload Local CSV")
@@ -179,11 +175,11 @@ def render_data_loader_page() -> None:
 
 
 def render_explore_page() -> None:
-    scroll_to_top()
     page_header(
         "📊  Explore Data with AI Insights",
         "Deep-dive into price action, volatility, decomposition, and return distributions.",
     )
+    scroll_to_top()
 
     dataframe = get_active_dataframe()
     if dataframe is None:
@@ -234,15 +230,16 @@ def render_explore_page() -> None:
                 st.error(f"❌  {exc}")
 
     if EXPLORE_AI_STATE in st.session_state:
+        st.markdown('<div class="ai-insight-header">🤖 AI Insights: Exploring Data</div>', unsafe_allow_html=True)
         st.markdown(st.session_state[EXPLORE_AI_STATE])
 
 
 def render_forecasting_page() -> None:
-    scroll_to_top()
     page_header(
         "🔮  Forecasting with AI Insights",
         "Train, evaluate and project BTC prices with statistical and deep-learning models.",
     )
+    scroll_to_top()
 
     dataframe = get_active_dataframe()
     if dataframe is None:
@@ -250,6 +247,15 @@ def render_forecasting_page() -> None:
 
     st.markdown("### ⚙️  Engine Configuration")
     config = render_engine_configuration(dataframe)
+
+    if "last_model_choice" not in st.session_state:
+        st.session_state["last_model_choice"] = config.model_choice
+    elif st.session_state["last_model_choice"] != config.model_choice:
+        if "last_result" in st.session_state:
+            del st.session_state["last_result"]
+        if FORECAST_AI_STATE in st.session_state:
+            del st.session_state[FORECAST_AI_STATE]
+        st.session_state["last_model_choice"] = config.model_choice
 
     series = dataframe[config.price_col].dropna()
     split_idx = int(len(series) * 0.85)
@@ -308,6 +314,7 @@ def render_forecasting_page() -> None:
                     st.error(f"❌  {exc}")
 
         if FORECAST_AI_STATE in st.session_state:
+            st.markdown('<div class="ai-insight-header">🤖 AI Insights: Forecasting</div>', unsafe_allow_html=True)
             st.markdown(st.session_state[FORECAST_AI_STATE])
     else:
         kpi_row(

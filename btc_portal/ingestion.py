@@ -69,6 +69,16 @@ def handle_remote_link_load(link_input: str) -> str | None:
         with st.spinner("⏳  Fetching dataset…"):
             dataframe = fetch_data_from_link(link_input)
             _set_active_dataframe(dataframe, "remote")
+            
+            # Extract a filename-like string from the link for the notice
+            import os
+            from urllib.parse import urlparse
+            display_name = os.path.basename(urlparse(link_input).path) or link_input
+            if "?" in display_name: display_name = display_name.split("?")[0]
+            if not display_name.endswith(".csv") and "/" not in display_name:
+                display_name = f"{display_name}.csv"
+            
+            st.session_state[UPLOAD_NOTICE_STATE] = f"✅  Loaded **{display_name}** — {len(dataframe):,} rows"
             st.rerun()
     except Exception as exc:
         return str(exc)

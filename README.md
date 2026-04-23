@@ -33,6 +33,7 @@ The **Bitcoin Price Forecasting Portal** is a production-grade, multi-page Strea
 - 🔮 **Multi-Model Forecasting** — Holt-Winters, ARIMA, and LSTM (PyTorch) with backtesting metrics
 - 🤖 **AI-Powered Insights** — Automated plain-language market summaries via Groq (LLaMA 3.1)
 - ⚡ **Smart Caching** — Persistent disk caching eliminates redundant downloads
+- 🎨 **Institutional UI** — Custom-designed notification boxes and AI-themed insight containers
 
 ---
 
@@ -74,11 +75,11 @@ The **Bitcoin Price Forecasting Portal** is a production-grade, multi-page Strea
 |---|---|
 | **Holt-Winters** | Exponential smoothing with trend and seasonal components |
 | **ARIMA (5,1,0)** | Auto-regressive integrated moving average |
-| **LSTM** | PyTorch-based Long Short-Term Memory neural network |
+| **LSTM** | **(Default)** PyTorch-based Long Short-Term Memory neural network |
 | **Configurable Parameters** | Target column, forecast horizon, train/test split, and confidence interval |
 | **Backtest Metrics** | MAE, RMSE, and MAPE on holdout test data |
 | **Future Projection** | Visual projection beyond the dataset with confidence bands |
-| **AI Forecast Summary** | Plain-language interpretation of model performance and predictions |
+| **AI Forecast Summary** | Plain-language interpretation with automated trend and confidence analysis |
 
 ---
 
@@ -213,6 +214,8 @@ The dashboard follows an **Institutional Navy & Gold** aesthetic:
 - **Color Palette:** Deep navy (`#080E1E`) background, gold (`#FADB5F`) accents, with red/green for market signals
 - **Typography:** Space Grotesk (headings) + JetBrains Mono (data)
 - **Charts:** Consistent Plotly dark theme with semi-transparent gridlines
+- **AI Containers:** Bespoke headers and gradient backgrounds for LLM-generated content
+- **Notifications:** Custom-styled success and error cards that replace default Streamlit alerts
 - **Layout:** Responsive sidebar navigation with KPI cards and full-width charts
 
 ---

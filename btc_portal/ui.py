@@ -298,6 +298,13 @@ section[data-testid="stFileUploadDropzone"] {
     border: 2px dashed var(--accent) !important;
     border-radius: 10px !important;
     transition: background-color 0.2s;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 180px !important;
+    text-align: center !important;
+    padding: 2rem !important;
 }
 [data-testid="stFileUploaderDropzone"]:hover,
 section[data-testid="stFileUploadDropzone"]:hover {
@@ -329,7 +336,9 @@ section[data-testid="stFileUploadDropzone"] button {
     border-radius: 5px !important;
     font-weight: 700 !important;
     border: none !important;
-    padding: 0.25rem 0.9rem !important;
+    padding: 0.5rem 1.2rem !important;
+    margin: 1rem auto 0.5rem !important;
+    display: inline-block !important;
 }
 [data-testid="stFileUploaderDropzone"] button *,
 section[data-testid="stFileUploadDropzone"] button * {
@@ -344,15 +353,20 @@ section[data-testid="stFileUploadDropzone"] button:hover {
 [data-testid="stFileUploader"] [data-testid^="stFileUploaderFile"],
 [data-testid="stFileUploader"] [data-testid^="stFileUploadFile"],
 [data-testid="stFileUploader"] [data-testid*="FileUploaderFile"],
-[data-testid="stFileUploader"] [data-testid*="FileUploadFile"],
-[data-testid="stFileUploaderDropzone"] ~ div,
-section[data-testid="stFileUploadDropzone"] ~ div,
-[data-testid="stFileUploader"] > div > div:not(:first-child),
-[data-testid="stFileUploader"] > section > div:not(:first-child) {
+[data-testid="stFileUploader"] [data-testid*="FileUploadFile"] {
     display: none !important;
     height: 0 !important;
     overflow: hidden !important;
     visibility: hidden !important;
+}
+
+[data-testid="stFileUploaderDropzone"] ~ div,
+section[data-testid="stFileUploadDropzone"] ~ div {
+    display: block !important;
+    text-align: center !important;
+    color: var(--text-muted) !important;
+    margin-top: 0.5rem !important;
+    font-size: 0.8rem !important;
 }
 
 .brand-logo {
@@ -445,6 +459,29 @@ hr { border-color: var(--bg-border) !important; }
     background: var(--bg-card) !important;
     border-radius: 0 0 8px 8px !important;
 }
+.ai-insight-header {
+    background: linear-gradient(90deg, rgba(250,219,95,0.15) 0%, transparent 100%);
+    border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 1rem 0 0.5rem;
+    border-radius: 4px;
+    font-family: var(--font-main);
+    letter-spacing: 0.05em;
+}
+
+/* Success Alert Styling */
+div[data-testid="stAlert"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--bg-border) !important;
+    border-radius: 10px !important;
+}
+div[data-testid="stAlert"]:has(svg[aria-label="Success"]) {
+    border-color: #00E676 !important;
+    background-color: rgba(0, 230, 118, 0.05) !important;
+}
 </style>
         """,
         unsafe_allow_html=True,
@@ -496,48 +533,52 @@ def no_data_gate() -> None:
 
 
 def scroll_to_top() -> None:
-    """Inject JS to scroll the main container to the top using the most reliable selector."""
-    components.html(
+    """Inject JS to scroll the main container to the top.
+
+    Uses st.markdown (direct DOM injection) instead of components.html
+    (iframe) so the script runs in the main document context with full
+    access to scrollable containers.
+    """
+    st.markdown(
         """
         <script>
-            function performScroll() {
-                // Scroll the parent window directly
-                window.parent.scrollTo({top: 0, behavior: 'instant'});
-                window.parent.document.body.scrollTop = 0;
-                window.parent.document.documentElement.scrollTop = 0;
-
-                // This selector is the most robust for modern Streamlit versions
-                const container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
-                if (container) {
-                    container.scrollTo({top: 0, behavior: 'instant'});
-                    if (container.parentElement) {
-                        container.parentElement.scrollTo({top: 0, behavior: 'instant'});
+            function _scrollToTop() {
+                // Target every known Streamlit scrollable wrapper
+                var selectors = [
+                    '[data-testid="stAppViewContainer"]',
+                    '[data-testid="stMain"]',
+                    '[data-testid="stMainBlockContainer"]',
+                    '.main',
+                    '.stApp',
+                    'section.main'
+                ];
+                for (var i = 0; i < selectors.length; i++) {
+                    var el = document.querySelector(selectors[i]);
+                    if (el) {
+                        el.scrollTop = 0;
+                        try { el.scrollTo({top: 0, behavior: 'instant'}); } catch(e) {}
+                        if (el.parentElement) el.parentElement.scrollTop = 0;
                     }
                 }
-                
-                // Fallbacks for older/different layouts
-                const main = window.parent.document.querySelector('.main');
-                if (main) main.scrollTo({top: 0, behavior: 'instant'});
-                
-                const stMain = window.parent.document.querySelector('[data-testid="stMain"]');
-                if (stMain) stMain.scrollTo({top: 0, behavior: 'instant'});
-                
-                const stApp = window.parent.document.querySelector('.stApp');
-                if (stApp) stApp.scrollTo({top: 0, behavior: 'instant'});
+
+                // Window / body / html
+                window.scrollTo({top: 0, behavior: 'instant'});
+                document.body.scrollTop = 0;
+                document.documentElement.scrollTop = 0;
+
+                // scrollIntoView on the page-header (always the first rendered element)
+                var hdr = document.querySelector('.page-header');
+                if (hdr) hdr.scrollIntoView({behavior: 'instant', block: 'start'});
             }
-            
-            // Execute immediately
-            performScroll();
-            
-            // Execute repeatedly over the next second to override Streamlit's internal scroll restoration
-            setTimeout(performScroll, 50);
-            setTimeout(performScroll, 150);
-            setTimeout(performScroll, 300);
-            setTimeout(performScroll, 600);
-            setTimeout(performScroll, 1000);
+
+            // Fire immediately + retries to beat Streamlit scroll restoration
+            _scrollToTop();
+            [30,80,150,250,400,600,900,1300].forEach(function(d){
+                setTimeout(_scrollToTop, d);
+            });
         </script>
         """,
-        height=0,
+        unsafe_allow_html=True,
     )
 
 

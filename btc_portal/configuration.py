@@ -6,9 +6,9 @@ import pandas as pd
 import streamlit as st
 
 MODEL_OPTIONS = [
+    "LSTM (Deep Learning)",
     "Holt-Winters Smoothing",
     "ARIMA",
-    "LSTM (Deep Learning)",
 ]
 
 
@@ -43,7 +43,7 @@ def render_engine_configuration(dataframe: pd.DataFrame) -> EngineConfig:
         price_col = st.selectbox("Target Variable", _target_columns(dataframe))
 
     with c2:
-        model_choice = st.selectbox("Algorithm", MODEL_OPTIONS, index=2)
+        model_choice = st.selectbox("Algorithm", MODEL_OPTIONS, index=0)
 
     with c3:
         horizon = st.slider("Horizon (Days)", 7, 180, 90)

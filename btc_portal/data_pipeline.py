@@ -11,16 +11,23 @@ import requests
 import streamlit as st
 
 @st.cache_data(show_spinner=False)
-def load_csv_data(file_bytes: bytes, filename: str) -> pd.DataFrame:
+def standardize_and_load_data(file_bytes: bytes, filename: str) -> pd.DataFrame:
     """Standardize an uploaded CSV into a daily Date-indexed dataframe with memory optimizations."""
     # First pass: read headers to find the timestamp column
-    header_only = pd.read_csv(io.BytesIO(file_bytes), nrows=0)
+    try:
+        header_only = pd.read_csv(io.BytesIO(file_bytes), nrows=0)
+    except Exception:
+        raise ValueError("Failed to read CSV format. Ensure the file is valid.")
+        
     timestamp_candidates = [
         col for col in header_only.columns
-        if any(token in str(col).lower() for token in ["time", "date", "timestamp"])
+        if any(token in str(col).lower() for token in ["time", "date", "timestamp", "unix"])
     ]
     if not timestamp_candidates:
-        raise ValueError("No timestamp column found. Expected 'Date' or 'Time'.")
+        cols = list(header_only.columns)
+        if len(cols) == 1 and "404" in str(cols[0]):
+             raise ValueError("File not found (404). The GitHub link might be broken, private, or not a raw CSV.")
+        raise ValueError(f"No timestamp column found. Expected 'Date', 'Time', or 'Unix'. Found headers: {cols[:10]}")
     
     timestamp_col = timestamp_candidates[0]
     
@@ -53,26 +60,27 @@ def load_csv_data(file_bytes: bytes, filename: str) -> pd.DataFrame:
 
     # Drop invalid dates and set index
     raw = raw.dropna(subset=[timestamp_col]).set_index(timestamp_col).sort_index()
+    raw = raw[~raw.index.duplicated(keep='first')]
     
     # Resample to daily (takes first price of the day)
     # This massively reduces memory usage (e.g., from 7.5M rows to ~3k rows)
-    daily = raw.resample("D").first()
-    
-    # Standardization: Title-case columns
-    daily.columns = [col.strip().title() for col in daily.columns]
+    raw = raw.resample("D").first()
     
     # Fill gaps in the daily range
-    full_range = pd.date_range(daily.index.min(), daily.index.max(), freq="D")
-    daily = daily.reindex(full_range).ffill().dropna()
-    daily.index.name = "Date"
+    full_range = pd.date_range(raw.index.min(), raw.index.max(), freq="D")
+    raw = raw.reindex(full_range).ffill().dropna()
+            
+    # Standardization: Title-case columns
+    raw.columns = [str(col).strip().title() for col in raw.columns]
+    raw.index.name = "Date"
 
-    if daily.empty or len(daily.columns) == 0:
+    if raw.empty or len(raw.columns) == 0:
         raise ValueError(
             "The dataset was parsed but resulted in zero usable columns. "
             "Please ensure the CSV contains numeric price data."
         )
 
-    return daily
+    return raw
 
 
 @st.cache_data(show_spinner=False)
@@ -122,7 +130,7 @@ def fetch_data_from_link(link: str) -> pd.DataFrame:
     if os.path.exists(cached_file) and os.path.getsize(cached_file) > 100:
         try:
             with open(cached_file, "rb") as f:
-                return load_csv_data(f.read(), f"cached_{link_hash}.csv")
+                return standardize_and_load_data(f.read(), f"cached_{link_hash}.csv")
         except Exception:
             # Cache file is corrupted, delete it and re-download
             os.remove(cached_file)
@@ -137,7 +145,7 @@ def fetch_data_from_link(link: str) -> pd.DataFrame:
         with open(cached_file, "wb") as f:
             f.write(response.content)
             
-        return load_csv_data(response.content, os.path.basename(urlparse(download_link).path) or "data.csv")
+        return standardize_and_load_data(response.content, os.path.basename(urlparse(download_link).path) or "data.csv")
 
     # 3. Handle Kaggle
     slug = _extract_kaggle_slug(cleaned)
@@ -153,7 +161,7 @@ def fetch_data_from_link(link: str) -> pd.DataFrame:
         # Save to disk cache for future quick access without kagglehub logic
         with open(cached_file, "wb") as f:
             f.write(content)
-        return load_csv_data(content, os.path.basename(csv_files[0]))
+        return standardize_and_load_data(content, os.path.basename(csv_files[0]))
 
 
 def get_default_price_column(dataframe: pd.DataFrame) -> str:

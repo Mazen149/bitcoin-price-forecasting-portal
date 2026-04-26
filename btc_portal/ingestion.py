@@ -5,7 +5,7 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from .data_pipeline import fetch_data_from_link, load_csv_data
+from .data_pipeline import fetch_data_from_link, standardize_and_load_data
 
 UPLOADER_KEY_STATE = "uploader_key"
 UPLOAD_NOTICE_STATE = "upload_notice"
@@ -38,6 +38,23 @@ def get_active_dataframe() -> pd.DataFrame | None:
 def _set_active_dataframe(dataframe: pd.DataFrame, source: str) -> None:
     st.session_state[DATAFRAME_STATE] = dataframe
     st.session_state[DATA_SOURCE_STATE] = source
+    clear_analysis_state()
+
+
+def clear_analysis_state() -> None:
+    """Clear all analysis results and AI summaries when a new dataset is loaded."""
+    keys_to_clear = [
+        "explore_ai_summary",
+        "forecast_ai_summary",
+        "last_result",
+        "last_train",
+        "last_test",
+        "last_ci_pct",
+        "last_model_choice",
+    ]
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
 
 
 def handle_uploaded_file(uploaded_file: object) -> str | None:
@@ -48,7 +65,7 @@ def handle_uploaded_file(uploaded_file: object) -> str | None:
         with st.spinner("⏳  Parsing and standardizing data…"):
             payload = getattr(cast_to_any(file_obj), "read")()
             filename = str(getattr(cast_to_any(file_obj), "name", "uploaded.csv"))
-            dataframe = load_csv_data(payload, filename)
+            dataframe = standardize_and_load_data(payload, filename)
             _set_active_dataframe(dataframe, "local")
 
         st.session_state[UPLOAD_NOTICE_STATE] = f"✅  Loaded **{filename}** — {len(dataframe):,} rows"

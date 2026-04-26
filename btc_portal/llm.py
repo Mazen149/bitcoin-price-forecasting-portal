@@ -127,17 +127,19 @@ def explain_explore_data_with_llm(dataframe: pd.DataFrame, price_col: str) -> st
     ]
 
     prompt = (
-        "You are a senior quantitative market analyst.\n"
-        "Write ONLY concise markdown insights that summarize what the charts imply, grounded in the provided stats.\n"
-        "Format the output elegantly with bold text, emojis, and clear spacing. Make it visually appealing.\n"
-        "Do NOT include advice, action items, or sections like “What to do next”.\n"
-        "Avoid hype and avoid making claims not supported by the numbers.\n"
+        "You are a Senior Institutional Investment Strategist at a top-tier global bank.\n"
+        "Provide professional, high-impact business insights based on the provided technical data.\n"
+        "Focus on market structure, volatility regimes, and risk assessment that a professional trader or fund manager would find valuable.\n"
+        "Use sophisticated financial terminology but keep the delivery EXTREMELY concise and punchy.\n"
+        "Format the output elegantly with bold text, emojis, and clear spacing.\n"
+        "Do NOT include generic advice or sections like “What to do next”.\n"
+        "Avoid hype; focus on the data-driven market narrative.\n"
         "Use these sections exactly (including the emojis in the headers):\n"
-        "### 💡 Key Insights\n"
-        "### 📊 Evidence From The Visuals\n"
-        "### ⚠️ Uncertainty & Limits\n"
-        "Under each section, use bullet points with relevant emojis.\n"
-        "Keep it under 180 words.\n\n"
+        "### 💡 Strategic Business Insights\n"
+        "### 📊 Market Regime Analysis\n"
+        "### ⚠️ Institutional Risk Assessment\n"
+        "CRITICAL INSTRUCTION: Under each section, you MUST provide EXACTLY 3 short bullet points. No more, no less.\n"
+        "Keep the entire response under 120 words total.\n\n"
         "Explore data summary:\n"
         + "\n".join(f"- {line}" for line in context_lines)
     )
@@ -198,19 +200,18 @@ def explain_forecast_with_llm(
     ]
 
     prompt = (
-        "You are a forecasting reviewer for a BTC dashboard.\n"
-        "Write ONLY concise markdown insights summarizing the forecast and test-data predictions.\n"
-        "Format the output elegantly with bold text, emojis, and clear spacing. Make it visually appealing.\n"
-        "Your job is to translate complex metrics into plain-language summaries (e.g., trend direction, magnitude, and general confidence level).\n"
-        "AVOID listing too many raw statistical numbers; instead, interpret them for the user (e.g., say 'high error' instead of just 'RMSE: 0.123').\n"
-        "If direction is unclear because the interval is wide, say so explicitly.\n"
-        "Do NOT include advice, action items, or sections like “What to do next”.\n"
+        "You are a Chief Investment Officer (CIO) reviewing predictive models for capital allocation.\n"
+        "Translate the statistical metrics into a professional business outlook and operational strategy.\n"
+        "Focus on the 'Bottom Line': What does this forecast imply for the market trend and institutional confidence?\n"
+        "Interpret the accuracy metrics (MAE/MAPE) as 'Predictive Reliability' rather than just raw numbers.\n"
+        "Format the output elegantly with bold text, emojis, and clear spacing.\n"
+        "Do NOT include advice or 'next steps'. Focus on the high-level interpretation.\n"
         "Use these sections exactly (including the emojis in the headers):\n"
-        "### 📈 Trend Summary\n"
-        "### 🎯 Accuracy & Reliability\n"
-        "### 📉 Confidence & Uncertainty\n"
-        "Under each section, use bullet points with relevant emojis.\n"
-        "Keep it under 150 words.\n\n"
+        "### 📈 Forecast Market Outlook\n"
+        "### 🎯 Predictive Integrity & Reliability\n"
+        "### 📉 Risk Exposure & Uncertainty\n"
+        "CRITICAL INSTRUCTION: Under each section, you MUST provide EXACTLY 3 short bullet points. No more, no less.\n"
+        "Keep the entire response under 120 words total.\n\n"
         "Forecast summary data (use for your analysis, but summarize in words):\n"
         + "\n".join(f"- {line}" for line in context_lines)
     )

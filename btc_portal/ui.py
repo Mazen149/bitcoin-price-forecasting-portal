@@ -360,13 +360,29 @@ section[data-testid="stFileUploadDropzone"] button:hover {
     visibility: hidden !important;
 }
 
+/* Hide any message below the dropzone */
 [data-testid="stFileUploaderDropzone"] ~ div,
 section[data-testid="stFileUploadDropzone"] ~ div {
-    display: block !important;
-    text-align: center !important;
-    color: var(--text-muted) !important;
-    margin-top: 0.5rem !important;
+    display: none !important;
+}
+
+/* Update the text inside the dropzone */
+[data-testid="stFileUploaderDropzone"] small,
+section[data-testid="stFileUploadDropzone"] small {
+    font-size: 0 !important;
+}
+[data-testid="stFileUploaderDropzone"] small::after,
+section[data-testid="stFileUploadDropzone"] small::after {
+    content: "Max size per file 1 GB • CSV";
     font-size: 0.8rem !important;
+    display: inline-block;
+    color: var(--text-muted) !important;
+}
+
+/* Hide "Press Enter to apply" instruction */
+[data-testid="stTextInput"] [data-testid="stWidgetInstructions"],
+[data-testid="stTextInput"] .st-emotion-cache-1vt4y6f {
+    display: none !important;
 }
 
 .brand-logo {
@@ -459,18 +475,47 @@ hr { border-color: var(--bg-border) !important; }
     background: var(--bg-card) !important;
     border-radius: 0 0 8px 8px !important;
 }
-.ai-insight-header {
-    background: linear-gradient(90deg, rgba(250,219,95,0.15) 0%, transparent 100%);
-    border-left: 4px solid var(--accent);
-    padding: 0.8rem 1rem;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--accent);
-    margin: 1rem 0 0.5rem;
-    border-radius: 4px;
-    font-family: var(--font-main);
+.ai-card-anchor {
+    display: none;
+}
+.ai-card-anchor + div[data-testid="stMarkdownContainer"] {
+    background: linear-gradient(145deg, rgba(20, 35, 65, 0.95) 0%, rgba(15, 26, 48, 1) 100%);
+    border: 2px solid rgba(250, 219, 95, 0.4) !important;
+    border-left: 6px solid var(--accent) !important;
+    box-shadow: 0 8px 32px rgba(250, 219, 95, 0.15) !important;
+    padding: 2rem !important;
+    border-radius: 16px !important;
+    margin: 2rem 0 !important;
+    animation: insight-glow 3s infinite alternate;
+}
+@keyframes insight-glow {
+    from { box-shadow: 0 8px 32px rgba(250, 219, 95, 0.15); }
+    to { box-shadow: 0 8px 48px rgba(250, 219, 95, 0.25); }
+}
+.ai-card-anchor + div[data-testid="stMarkdownContainer"] h2 {
+    color: var(--accent) !important;
+    font-size: 1.8rem !important;
+    font-weight: 800 !important;
+    margin-bottom: 1.5rem !important;
+    text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+.ai-card-anchor + div[data-testid="stMarkdownContainer"] h3 {
+    color: var(--accent) !important;
+    font-size: 1.3rem !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
+    border-bottom: 2px solid rgba(250, 219, 95, 0.2);
+    padding-bottom: 0.5rem;
+}
+.ai-card-anchor + div[data-testid="stMarkdownContainer"] li {
+    margin-bottom: 0.6rem !important;
+    color: #FFFFFF !important;
+    font-size: 1.05rem !important;
+    line-height: 1.6 !important;
+}
+
+
 
 /* Success Alert Styling */
 div[data-testid="stAlert"] {
@@ -481,6 +526,95 @@ div[data-testid="stAlert"] {
 div[data-testid="stAlert"]:has(svg[aria-label="Success"]) {
     border-color: #00E676 !important;
     background-color: rgba(0, 230, 118, 0.05) !important;
+}
+
+/* Copy button & Container */
+.copy-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(250, 219, 95, 0.04);
+    border: 1px solid var(--bg-border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.6rem;
+    transition: all 0.2s ease;
+}
+.copy-container:hover {
+    border-color: var(--accent);
+    background: rgba(250, 219, 95, 0.08);
+}
+.copy-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    min-width: 100px;
+}
+.copy-value {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.copy-btn {
+    background: var(--bg-panel) !important;
+    border: 1px solid var(--bg-border) !important;
+    color: var(--text-muted) !important;
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.copy-btn:hover {
+    color: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+.copy-btn:hover svg {
+    fill: var(--accent) !important;
+    transform: scale(1.05);
+}
+
+/* Example Link Rows */
+.example-row {
+    display: flex;
+    align-items: center;
+    background: rgba(250, 219, 95, 0.03) !important;
+    border: 1px solid var(--bg-border) !important;
+    border-radius: 10px !important;
+    padding: 0.2rem 0.8rem !important;
+    margin-bottom: 0.4rem !important;
+}
+.example-label {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--text-muted) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    min-width: 80px;
+}
+.example-value {
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+    color: var(--accent) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Compact "Use" buttons */
+div[data-testid="stHorizontalBlock"] button[kind="secondary"] {
+    padding-top: 0.1rem !important;
+    padding-bottom: 0.1rem !important;
+    font-size: 11px !important;
+    height: 30px !important;
+    white-space: nowrap !important;
 }
 </style>
         """,

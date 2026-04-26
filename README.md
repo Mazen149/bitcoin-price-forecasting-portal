@@ -28,12 +28,12 @@
 The **Bitcoin Price Forecasting Portal** is a production-grade, multi-page Streamlit application that combines advanced time-series analytics with AI-driven insights. It enables users to load, explore, and forecast Bitcoin price data through a sleek, institutional-grade dark-themed dashboard.
 
 **Key Highlights:**
-- 📥 **Flexible Data Ingestion** — Upload CSVs, paste GitHub URLs, or fetch directly from Kaggle
-- 📊 **Rich Exploratory Analysis** — Interactive candlestick charts, time-series decomposition, return distributions, and seasonal heatmaps
-- 🔮 **Multi-Model Forecasting** — Holt-Winters, ARIMA, and LSTM (PyTorch) with test-data prediction metrics
-- 🤖 **AI-Powered Insights** — Automated plain-language market summaries via Groq (LLaMA 3.1)
-- ⚡ **Smart Caching** — Persistent disk caching eliminates redundant downloads
-- 🎨 **Institutional UI** — Custom-designed notification boxes and AI-themed insight containers
+- 📥 **Flexible Data Ingestion** — Upload CSVs, paste GitHub URLs, or one-click fetch from Kaggle
+- 📊 **Rich Exploratory Analysis** — Interactive candlestick charts, time-series decomposition, and seasonal heatmaps
+- 🔮 **Multi-Model Forecasting** — Holt-Winters, ARIMA, and LSTM (Deep Learning) with future projections
+- 🤖 **Strategic AI Insights** — Professional market summaries from a CIO/Strategist perspective, powered by Groq
+- ⚡ **Smart Link Injection** — Instant data loading via a one-click example library
+- 🎨 **Institutional UI** — Animated "glowing" insight cards with a premium Navy & Gold aesthetic
 
 ---
 
@@ -57,8 +57,9 @@ The **Bitcoin Price Forecasting Portal** is a production-grade, multi-page Strea
 | **Local Upload** | Drag-and-drop CSV files with automatic parsing and standardization |
 | **Remote Fetch** | Paste any GitHub blob URL or direct CSV link |
 | **Kaggle Integration** | Enter a dataset slug (e.g., `novandraanugrah/bitcoin-historical-datasets-2018-2024`) for one-click download via KaggleHub |
+| **Smart Injection** | One-click library of example links for instant testing and auto-filling |
 | **Smart Caching** | Downloaded datasets are cached to disk — same link = instant reload |
-| **Auto-Normalization** | Timestamps (Unix/ISO), column names, and daily resampling handled automatically |
+| **Auto-Normalization** | Timestamps (Unix/ISO), column names, and **mandatory daily resampling** handled automatically |
 
 ### 📊 Explore Data with AI Insights
 | Visualization | Description |
@@ -182,7 +183,7 @@ Use these datasets to test the portal end-to-end:
 |---|---|
 | **Kaggle Link** | `novandraanugrah/bitcoin-historical-datasets-2018-2024` |
 | **Kaggle Slug** | `mczielinski/bitcoin-historical-data` |
-| **GitHub Blob URL** | `https://github.com/Yrzxiong/Bitcoin-Dataset/blob/master/bitcoin_dataset.csv` |
+| **GitHub Blob URL** | `https://github.com/ff137/bitstamp-btcusd-minute-data/blob/main/data/updates/btcusd_bitstamp_1min_latest.csv` |
 
 **Suggested workflow:**
 1. Open the **Data Loader** tab
@@ -211,12 +212,13 @@ Use these datasets to test the portal end-to-end:
 
 The dashboard follows an **Institutional Navy & Gold** aesthetic:
 
-- **Color Palette:** Deep navy (`#080E1E`) background, gold (`#FADB5F`) accents, with red/green for market signals
-- **Typography:** Space Grotesk (headings) + JetBrains Mono (data)
-- **Charts:** Consistent Plotly dark theme with semi-transparent gridlines
-- **AI Containers:** Bespoke headers and gradient backgrounds for LLM-generated content
-- **Notifications:** Custom-styled success and error cards that replace default Streamlit alerts
-- **Layout:** Responsive sidebar navigation with KPI cards and full-width charts
+- **Color Palette:** Deep navy (`#080E1E`) background, gold (`#FADB5F`) accents, with high-contrast market signals
+- **Typography:** Space Grotesk (headings) + JetBrains Mono (data tables)
+- **Charts:** Consistent Plotly dark theme with refined typography and gold grids
+- **AI Insight Cards:** Bespoke animated "glowing" containers with 3D depth and institutional headers
+- **Strategic Persona:** Insights are delivered from the perspective of a **Senior Strategist** or **Chief Investment Officer (CIO)**
+- **Notifications:** Custom-styled success/error cards that replace standard Streamlit alerts
+- **Layout:** Fully responsive multi-page architecture with persistent sidebar navigation
 
 ---
 
@@ -252,9 +254,5 @@ The app ships with a pre-configured `.streamlit/config.toml` that forces dark mo
 ## 📄 License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
-
----
-
-[![Streamlit](https://img.shields.io/badge/Powered_by-Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
 
 </div>

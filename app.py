@@ -14,6 +14,7 @@ from __future__ import annotations
 import warnings
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from btc_portal.configuration import render_engine_configuration
 from btc_portal.data_pipeline import get_default_price_column
@@ -66,7 +67,7 @@ REMOTE_LINK_EXAMPLES = [
     ),
     (
         "GitHub Blob URL",
-        "https://github.com/Yrzxiong/Bitcoin-Dataset/blob/master/bitcoin_dataset.csv",
+        "https://github.com/ff137/bitstamp-btcusd-minute-data/blob/main/data/updates/btcusd_bitstamp_1min_latest.csv",
     ),
 ]
 
@@ -104,12 +105,22 @@ def render_data_loader_page() -> None:
         st.markdown("#### 🌐  Fetch from URL or Kaggle")
 
         with st.expander("💡  View Example Data Links"):
-            st.caption("Use these links to test the fetch loader. Click to copy or open.")
+            st.caption("Click the 'Use' button beside any link to automatically fill the fetch input.")
+            
             for label, value in REMOTE_LINK_EXAMPLES:
-                if value.startswith("http"):
-                    st.markdown(f"**{label}**: `{value}`")
-                else:
-                    st.markdown(f"**{label}**: `{value}`")
+                # Balanced columns to prevent button text wrapping while keeping links left
+                c1, c2, c3 = st.columns([0.6, 3.2, 1.2], vertical_alignment="center")
+                with c1:
+                    st.markdown(f'<div class="example-label">{label}</div>', unsafe_allow_html=True)
+                with c2:
+                    st.markdown(f'<div class="example-value">{value}</div>', unsafe_allow_html=True)
+                with c3:
+                    if st.button(f"Use {label}", key=f"src_{label}", use_container_width=True):
+                        st.session_state["remote_link_input"] = value
+                        st.rerun()
+
+        if "remote_link_input" not in st.session_state:
+            st.session_state["remote_link_input"] = ""
 
         input_col, button_col = st.columns([5.5, 1], vertical_alignment="bottom")
         with input_col:
@@ -117,6 +128,7 @@ def render_data_loader_page() -> None:
                 "Raw CSV URL or Kaggle dataset slug",
                 placeholder="https://.../data.csv   or   mczielinski/bitcoin-...",
                 label_visibility="collapsed",
+                key="remote_link_input",
             )
         with button_col:
             download_clicked = st.button("📡 Fetch Data", type="primary", use_container_width=True)
@@ -230,8 +242,8 @@ def render_explore_page() -> None:
                 st.error(f"❌  {exc}")
 
     if EXPLORE_AI_STATE in st.session_state:
-        st.markdown('<div class="ai-insight-header">🤖 AI Insights: Exploring Data</div>', unsafe_allow_html=True)
-        st.markdown(st.session_state[EXPLORE_AI_STATE])
+        st.markdown('<div class="ai-card-anchor"></div>', unsafe_allow_html=True)
+        st.markdown(f"## 🤖 Institutional Data Analysis\n\n{st.session_state[EXPLORE_AI_STATE]}")
 
 
 def render_forecasting_page() -> None:
@@ -314,8 +326,8 @@ def render_forecasting_page() -> None:
                     st.error(f"❌  {exc}")
 
         if FORECAST_AI_STATE in st.session_state:
-            st.markdown('<div class="ai-insight-header">🤖 AI Insights: Forecasting</div>', unsafe_allow_html=True)
-            st.markdown(st.session_state[FORECAST_AI_STATE])
+            st.markdown('<div class="ai-card-anchor"></div>', unsafe_allow_html=True)
+            st.markdown(f"## 🔮 Strategic Forecast Interpretation\n\n{st.session_state[FORECAST_AI_STATE]}")
     else:
         kpi_row(
             [

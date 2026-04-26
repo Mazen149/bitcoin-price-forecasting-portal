@@ -1,7 +1,7 @@
 """Core modules for the Bitcoin Price Forecasting Portal."""
 
 from .configuration import EngineConfig, render_engine_configuration
-from .data_pipeline import fetch_data_from_link, get_default_price_column, load_csv_data, normalize_remote_csv_link
+from .data_pipeline import fetch_data_from_link, get_default_price_column, normalize_remote_csv_link, standardize_and_load_data
 from .forecasting import PyTorchLSTM, evaluate_metrics, run_arima, run_holt_winters, run_lstm, run_model
 from .ingestion import (
     get_active_dataframe,
@@ -74,7 +74,6 @@ __all__ = [
     "initialize_uploader_state",
     "inject_custom_css",
     "kpi_row",
-    "load_csv_data",
     "no_data_gate",
     "normalize_remote_csv_link",
     "page_header",
@@ -87,4 +86,5 @@ __all__ = [
     "run_lstm",
     "run_model",
     "section_title",
+    "standardize_and_load_data",
 ]

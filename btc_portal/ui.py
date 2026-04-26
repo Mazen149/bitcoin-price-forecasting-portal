@@ -179,11 +179,10 @@ html, body, .stApp, .main,
 }
 
 code {
-    background: rgba(250, 219, 95, 0.08) !important;
-    color: var(--accent) !important;
-    border: 1px solid var(--bg-border) !important;
-    border-radius: 4px !important;
-    padding: 0.1rem 0.3rem !important;
+    background: transparent !important;
+    color: inherit !important;
+    border: none !important;
+    padding: 0 !important;
     font-family: var(--font-mono) !important;
 }
 .kpi-sub {
@@ -478,35 +477,37 @@ hr { border-color: var(--bg-border) !important; }
 .ai-card-anchor {
     display: none;
 }
-.ai-card-anchor + div[data-testid="stMarkdownContainer"] {
+/* Fixed selector for Streamlit: target the container AFTER the anchor container */
+div[data-testid="stMarkdownContainer"]:has(.ai-card-anchor) + div[data-testid="stMarkdownContainer"] {
     background: linear-gradient(145deg, rgba(20, 35, 65, 0.95) 0%, rgba(15, 26, 48, 1) 100%);
-    border: 2px solid rgba(250, 219, 95, 0.4) !important;
-    border-left: 6px solid var(--accent) !important;
-    box-shadow: 0 8px 32px rgba(250, 219, 95, 0.15) !important;
+    border: 2px solid rgba(79, 195, 247, 0.3) !important;
+    border-left: 6px solid #4FC3F7 !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
     padding: 2rem !important;
     border-radius: 16px !important;
     margin: 2rem 0 !important;
-    animation: insight-glow 3s infinite alternate;
 }
-@keyframes insight-glow {
-    from { box-shadow: 0 8px 32px rgba(250, 219, 95, 0.15); }
-    to { box-shadow: 0 8px 48px rgba(250, 219, 95, 0.25); }
-}
-.ai-card-anchor + div[data-testid="stMarkdownContainer"] h2 {
-    color: var(--accent) !important;
+div[data-testid="stMarkdownContainer"]:has(.ai-card-anchor) + div[data-testid="stMarkdownContainer"] h2 {
+    color: #4FC3F7 !important;
     font-size: 1.8rem !important;
     font-weight: 800 !important;
     margin-bottom: 1.5rem !important;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-.ai-card-anchor + div[data-testid="stMarkdownContainer"] h3 {
-    color: var(--accent) !important;
+div[data-testid="stMarkdownContainer"]:has(.ai-card-anchor) + div[data-testid="stMarkdownContainer"] h3 {
+    color: #4FC3F7 !important;
     font-size: 1.3rem !important;
     margin-top: 1.5rem !important;
     margin-bottom: 1rem !important;
-    border-bottom: 2px solid rgba(250, 219, 95, 0.2);
+    border-bottom: 2px solid rgba(79, 195, 247, 0.2);
     padding-bottom: 0.5rem;
+}
+div[data-testid="stMarkdownContainer"]:has(.ai-card-anchor) + div[data-testid="stMarkdownContainer"] code {
+    background: transparent !important;
+    color: inherit !important;
+    border: none !important;
+    padding: 0 !important;
 }
 .ai-card-anchor + div[data-testid="stMarkdownContainer"] li {
     margin-bottom: 0.6rem !important;

@@ -127,20 +127,23 @@ def explain_explore_data_with_llm(dataframe: pd.DataFrame, price_col: str) -> st
     ]
 
     prompt = (
-        "You are a Senior Institutional Investment Strategist at a top-tier global bank.\n"
-        "Provide professional, high-impact business insights based on the provided technical data.\n"
-        "Focus on market structure, volatility regimes, and risk assessment that a professional trader or fund manager would find valuable.\n"
-        "Use sophisticated financial terminology but keep the delivery EXTREMELY concise and punchy.\n"
-        "Format the output elegantly with bold text, emojis, and clear spacing.\n"
-        "Do NOT include generic advice or sections like “What to do next”.\n"
-        "Avoid hype; focus on the data-driven market narrative.\n"
-        "Use these sections exactly (including the emojis in the headers):\n"
-        "### 💡 Strategic Business Insights\n"
-        "### 📊 Market Regime Analysis\n"
-        "### ⚠️ Institutional Risk Assessment\n"
-        "CRITICAL INSTRUCTION: Under each section, you MUST provide EXACTLY 3 short bullet points. No more, no less.\n"
-        "Keep the entire response under 120 words total.\n\n"
-        "Explore data summary:\n"
+        """You are a friendly, expert financial guide who makes complex market data easy for anyone to understand.
+        Provide clear, practical, and high-impact insights based on the provided data.
+        Focus on the big picture: the market's current mood, potential risks, and overall trends that an everyday person would find valuable.
+        Use plain, highly accessible language and strictly avoid sophisticated financial jargon. Keep the delivery EXTREMELY concise and punchy.
+        Format the output elegantly with bold text, emojis, and clear spacing.
+        Do NOT include generic advice or sections like 'What to do next'.
+        Avoid hype; focus on the straightforward story the data tells.
+        HARD CONSTRAINT: You MUST provide EXACTLY 6 high-impact insights as a flat list of bullet points.
+        Do NOT use any headers, titles, or categories.
+        Each bullet point MUST start with a unique, relevant emoji.
+        Separate EACH bullet point with a newline so there is a clear "Enter" gap between them.
+        CRITICAL: NEVER use backticks (`), inline code formatting, or code blocks for numbers or text. Use plain text only.
+        Keep the delivery EXTREMELY concise—one sentence per bullet point.
+        USER FOCUS: Explain the 'So What?' of the data for an absolute beginner. Absolutely NO heavy statistical numbers or complex math; translate the data into clear, intuitive, real-world takeaways.
+        Keep the entire response under 120 words total.
+
+        Explore data summary:"""
         + "\n".join(f"- {line}" for line in context_lines)
     )
 
@@ -200,19 +203,22 @@ def explain_forecast_with_llm(
     ]
 
     prompt = (
-        "You are a Chief Investment Officer (CIO) reviewing predictive models for capital allocation.\n"
-        "Translate the statistical metrics into a professional business outlook and operational strategy.\n"
-        "Focus on the 'Bottom Line': What does this forecast imply for the market trend and institutional confidence?\n"
-        "Interpret the accuracy metrics (MAE/MAPE) as 'Predictive Reliability' rather than just raw numbers.\n"
-        "Format the output elegantly with bold text, emojis, and clear spacing.\n"
-        "Do NOT include advice or 'next steps'. Focus on the high-level interpretation.\n"
-        "Use these sections exactly (including the emojis in the headers):\n"
-        "### 📈 Forecast Market Outlook\n"
-        "### 🎯 Predictive Integrity & Reliability\n"
-        "### 📉 Risk Exposure & Uncertainty\n"
-        "CRITICAL INSTRUCTION: Under each section, you MUST provide EXACTLY 3 short bullet points. No more, no less.\n"
-        "Keep the entire response under 120 words total.\n\n"
-        "Forecast summary data (use for your analysis, but summarize in words):\n"
+     """You are a friendly, expert financial guide who makes complex market forecasts easy for anyone to understand.
+        Translate the predictive models into a clear, straightforward outlook.
+        Focus on the 'Bottom Line': What does this forecast suggest about future market trends and overall confidence?
+        Interpret the accuracy of the model simply as its 'trustworthiness' or 'reliability,' strictly avoiding confusing statistical acronyms like MAE or MAPE.
+        Format the output elegantly with bold text, emojis, and clear spacing.
+        Do NOT include generic advice or 'next steps'. Focus purely on the high-level interpretation.
+        HARD CONSTRAINT: You MUST provide EXACTLY 6 high-impact insights as a flat list of bullet points.
+        Do NOT use any headers, titles, or categories.
+        Each bullet point MUST start with a unique, relevant emoji.
+        Separate EACH bullet point with a newline so there is a clear "Enter" gap between them.
+        CRITICAL: NEVER use backticks (`), inline code formatting, or code blocks for numbers or text. Use plain text only.
+        Keep the delivery EXTREMELY concise—one sentence per bullet point.
+        USER FOCUS: Explain the 'So What?' of the forecast for an absolute beginner. Absolutely NO heavy statistical numbers or complex math; translate the data into clear, intuitive, real-world expectations.
+        Keep the entire response under 120 words total.
+
+        Forecast summary data:"""
         + "\n".join(f"- {line}" for line in context_lines)
     )
 
